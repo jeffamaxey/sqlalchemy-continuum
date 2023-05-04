@@ -78,20 +78,18 @@ class RelationshipBuilder(object):
         """
         if self.property.lazy == 'dynamic':
             return query
-        if self.property.uselist is False:
-            return query.first()
-        return query.all()
+        return query.first() if self.property.uselist is False else query.all()
 
     def criteria(self, obj):
-        direction = self.property.direction
-
         if self.versioned:
-            if direction.name == 'ONETOMANY':
-                return self.one_to_many_criteria(obj)
-            elif direction.name == 'MANYTOMANY':
+            direction = self.property.direction
+
+            if direction.name == 'MANYTOMANY':
                 return self.many_to_many_criteria(obj)
             elif direction.name == 'MANYTOONE':
                 return self.many_to_one_criteria(obj)
+            elif direction.name == 'ONETOMANY':
+                return self.one_to_many_criteria(obj)
         else:
             reflector = VersionExpressionReflector(obj, self.property)
             return reflector(self.property.primaryjoin)
@@ -321,9 +319,9 @@ class RelationshipBuilder(object):
         )
         metadata = column.table.metadata
         if builder.parent_table.schema:
-            table_name = builder.parent_table.schema + '.' + builder.table_name
+            table_name = f'{builder.parent_table.schema}.{builder.table_name}'
         elif metadata.schema:
-            table_name = metadata.schema + '.' + builder.table_name
+            table_name = f'{metadata.schema}.{builder.table_name}'
         else:
             table_name = builder.table_name
 

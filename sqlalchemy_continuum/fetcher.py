@@ -61,25 +61,19 @@ class VersionObjectFetcher(object):
         if alias is None:
             alias = sa.orm.aliased(obj.__class__)
             table = alias.__table__
-            if hasattr(alias, 'c'):
-                attrs = alias.c
-            else:
-                attrs = alias
+            attrs = alias.c if hasattr(alias, 'c') else alias
         else:
             table = alias.original
             attrs = alias.c
-        query = (
+        return (
             sa.select(
-                [func(
-                    getattr(attrs, tx_column_name(obj))
-                )],
-                from_obj=[table]
+                [func(getattr(attrs, tx_column_name(obj)))], from_obj=[table]
             )
             .where(
                 sa.and_(
                     op(
                         getattr(attrs, tx_column_name(obj)),
-                        getattr(obj, tx_column_name(obj))
+                        getattr(obj, tx_column_name(obj)),
                     ),
                     *[
                         getattr(attrs, pk) == getattr(obj, pk)
@@ -90,7 +84,6 @@ class VersionObjectFetcher(object):
             )
             .correlate(table)
         )
-        return query
 
     def _next_prev_query(self, obj, next_or_prev='next'):
         session = sa.orm.object_session(obj)
@@ -129,16 +122,11 @@ class VersionObjectFetcher(object):
             .correlate(alias.__table__)
             .label('position')
         )
-        query = (
+        return (
             sa.select([subquery], from_obj=[obj.__table__])
-            .where(
-                sa.and_(*eqmap(identity, (obj.__class__, obj)))
-            )
-            .order_by(
-                getattr(obj.__class__, tx_column_name(obj))
-            )
+            .where(sa.and_(*eqmap(identity, (obj.__class__, obj))))
+            .order_by(getattr(obj.__class__, tx_column_name(obj)))
         )
-        return query
 
 
 class SubqueryFetcher(VersionObjectFetcher):

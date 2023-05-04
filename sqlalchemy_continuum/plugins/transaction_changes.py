@@ -55,11 +55,8 @@ class TransactionChangesFactory(ModelFactory):
             backref=sa.orm.backref(
                 'changes',
             ),
-            primaryjoin=(
-                '%s.id == TransactionChanges.transaction_id' %
-                manager.transaction_cls.__name__
-            ),
-            foreign_keys=[TransactionChanges.transaction_id]
+            primaryjoin=f'{manager.transaction_cls.__name__}.id == TransactionChanges.transaction_id',
+            foreign_keys=[TransactionChanges.transaction_id],
         )
         return TransactionChanges
 

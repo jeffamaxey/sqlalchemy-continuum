@@ -89,13 +89,10 @@ class ColumnReflector(object):
                 self.manager.is_excluded_column(self.model, column)
             ):
                 continue
-            reflected_column = self.reflect_column(column)
-            yield reflected_column
+            yield self.reflect_column(column)
 
     def __iter__(self):
-        for column in self.reflected_parent_columns:
-            yield column
-
+        yield from self.reflected_parent_columns
         # Only yield internal version columns if parent model is not using
         # single table inheritance
         if not self.model or not sa.inspect(self.model).single:
@@ -135,10 +132,7 @@ class TableBuilder(object):
 
     @property
     def columns(self):
-        return list(
-            column for column in
-            ColumnReflector(self.manager, self.parent_table, self.model)
-        )
+        return list(ColumnReflector(self.manager, self.parent_table, self.model))
 
     def __call__(self, extends=None):
         """

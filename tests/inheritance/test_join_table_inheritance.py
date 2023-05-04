@@ -102,10 +102,10 @@ class JoinTableInheritanceTestCase(TestCase):
         self.session.add(article)
         self.session.commit()
         assert self.session.execute(
-            'SELECT %s FROM article_version' % tx_column
+            f'SELECT {tx_column} FROM article_version'
         ).fetchone()[0]
         assert self.session.execute(
-            'SELECT %s FROM text_item_version' % tx_column
+            f'SELECT {tx_column} FROM text_item_version'
         ).fetchone()[0]
 
     def test_primary_keys(self):

@@ -182,10 +182,7 @@ class ModelBuilder(object):
         args = {}
 
         if not sa.inspect(self.model).single:
-            parent = find_closest_versioned_parent(
-                self.manager, self.model
-            )
-            if parent:
+            if parent := find_closest_versioned_parent(self.manager, self.model):
                 # The version classes do not contain foreign keys, hence we
                 # need to map inheritance condition manually for classes that
                 # use joined table inheritance
@@ -209,7 +206,7 @@ class ModelBuilder(object):
                         if column.primary_key
                     ]
 
-        args.update(copy_mapper_args(self.model))
+        args |= copy_mapper_args(self.model)
 
         return args
 
@@ -218,7 +215,7 @@ class ModelBuilder(object):
         mapper = sa.inspect(self.model)
         args = {}
 
-        if parent_models and not (mapper.single or mapper.concrete):
+        if parent_models and not mapper.single and not mapper.concrete:
             columns = [
                 self.manager.option(self.model, 'operation_type_column_name'),
                 self.manager.option(self.model, 'transaction_column_name')
@@ -264,12 +261,9 @@ class ModelBuilder(object):
         args.update(self.get_inherited_denormalized_columns(table))
 
         if self.manager.options.get('use_module_name', True):
-            name = '%s%sVersion' % (
-                self.model.__module__.title().replace('.', ''),
-                self.model.__name__
-            )
+            name = f"{self.model.__module__.title().replace('.', '')}{self.model.__name__}Version"
         else:
-            name = '%sVersion' % (self.model.__name__,)
+            name = f'{self.model.__name__}Version'
         return type(name, self.base_classes(), args)
 
 

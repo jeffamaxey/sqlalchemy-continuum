@@ -52,36 +52,30 @@ class Reverter(object):
         if prop.uselist:
             setattr(self.version_parent, prop.key, [])
             for child_obj in getattr(self.obj, prop.key):
-                value = self.revert_child(child_obj, prop)
-                if value:
+                if value := self.revert_child(child_obj, prop):
                     getattr(self.version_parent, prop.key).append(
                         value
                     )
         else:
             setattr(self.version_parent, prop.key, None)
             value = getattr(self.obj, prop.key)
-            value = self.revert_child(
-                value, prop
-            )
-            if value:
+            if value := self.revert_child(value, prop):
                 setattr(self.version_parent, prop.key, value)
 
     def revert_relationship(self, prop):
         if prop.secondary is not None:
             self.revert_association(prop)
-        else:
-            if prop.uselist:
-                values = []
-                for child_obj in getattr(self.obj, prop.key):
-                    value = self.revert_child(child_obj, prop)
-                    if value:
-                        values.append(value)
+        elif prop.uselist:
+            values = []
+            for child_obj in getattr(self.obj, prop.key):
+                if value := self.revert_child(child_obj, prop):
+                    values.append(value)
 
-                for value in getattr(self.version_parent, prop.key, []):
-                    if value not in values:
-                        self.session.delete(value)
-            else:
-                self.revert_child(getattr(self.obj, prop.key), prop)
+            for value in getattr(self.version_parent, prop.key, []):
+                if value not in values:
+                    self.session.delete(value)
+        else:
+            self.revert_child(getattr(self.obj, prop.key), prop)
 
     def revert_child(self, child, prop):
         return self.__class__(

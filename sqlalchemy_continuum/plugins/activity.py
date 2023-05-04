@@ -221,10 +221,9 @@ class ActivityFactory(ModelFactory):
         """
         Create Activity class.
         """
-        class Activity(
-            manager.declarative_base,
-            ActivityBase
-        ):
+
+
+        class Activity(manager.declarative_base, ActivityBase):
             __tablename__ = 'activity'
             manager = self
 
@@ -251,8 +250,7 @@ class ActivityFactory(ModelFactory):
             def _calculate_tx_id(self, obj):
                 session = sa.orm.object_session(self)
                 if obj:
-                    object_version = version_obj(session, obj)
-                    if object_version:
+                    if object_version := version_obj(session, obj):
                         return object_version.transaction_id
 
                     model = obj.__class__
@@ -276,7 +274,7 @@ class ActivityFactory(ModelFactory):
 
             @hybrid_property
             def object_version_type(self):
-                return self.object_type + 'Version'
+                return f'{self.object_type}Version'
 
             @object_version_type.expression
             def object_version_type(cls):
@@ -292,7 +290,7 @@ class ActivityFactory(ModelFactory):
 
             @hybrid_property
             def target_version_type(self):
-                return self.target_type + 'Version'
+                return f'{self.target_type}Version'
 
             @target_version_type.expression
             def target_version_type(cls):
@@ -302,16 +300,14 @@ class ActivityFactory(ModelFactory):
                 target_version_type, (target_id, target_tx_id)
             )
 
+
         Activity.transaction = sa.orm.relationship(
             manager.transaction_cls,
             backref=sa.orm.backref(
                 'activities',
             ),
-            primaryjoin=(
-                '%s.id == Activity.transaction_id' %
-                manager.transaction_cls.__name__
-            ),
-            foreign_keys=[Activity.transaction_id]
+            primaryjoin=f'{manager.transaction_cls.__name__}.id == Activity.transaction_id',
+            foreign_keys=[Activity.transaction_id],
         )
         return Activity
 

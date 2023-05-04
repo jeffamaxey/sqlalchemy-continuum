@@ -125,10 +125,9 @@ class TransactionFactory(ModelFactory):
         """
         Create Transaction class.
         """
-        class Transaction(
-            manager.declarative_base,
-            TransactionBase
-        ):
+
+
+        class Transaction(manager.declarative_base, TransactionBase):
             __tablename__ = 'transaction'
             __versioning_manager__ = manager
 
@@ -143,23 +142,19 @@ class TransactionFactory(ModelFactory):
                 remote_addr = sa.Column(sa.String(50))
 
             if manager.user_cls:
-                user_cls = manager.user_cls
                 Base = manager.declarative_base
                 try:
                     registry = Base.registry._class_registry
                 except AttributeError:  # SQLAlchemy < 1.4
                     registry = Base._decl_class_registry
 
+                user_cls = manager.user_cls
                 if isinstance(user_cls, six.string_types):
                     try:
                         user_cls = registry[user_cls]
                     except KeyError:
                         raise ImproperlyConfigured(
-                            'Could not build relationship between Transaction'
-                            ' and %s. %s was not found in declarative class '
-                            'registry. Either configure VersioningManager to '
-                            'use different user class or disable this '
-                            'relationship ' % (user_cls, user_cls)
+                            f'Could not build relationship between Transaction and {user_cls}. {user_cls} was not found in declarative class registry. Either configure VersioningManager to use different user class or disable this relationship '
                         )
 
                 user_id = sa.Column(
@@ -178,16 +173,12 @@ class TransactionFactory(ModelFactory):
                     if hasattr(self, field)
                 )
                 return '<Transaction %s>' % ', '.join(
-                    (
-                        '%s=%r' % (field, value)
-                        if not isinstance(value, six.integer_types)
-                        # We want the following line to ensure that longs get
-                        # shown without the ugly L suffix on python 2.x
-                        # versions
-                        else '%s=%d' % (field, value)
-                        for field, value in field_values.items()
-                    )
+                    '%s=%d' % (field, value)
+                    if isinstance(value, six.integer_types)
+                    else '%s=%r' % (field, value)
+                    for field, value in field_values.items()
                 )
+
 
         if manager.options['native_versioning']:
             create_triggers(Transaction)

@@ -70,10 +70,7 @@ class VersioningManager(object):
         builder=None
     ):
         self.uow_class = unit_of_work_cls
-        if builder is None:
-            self.builder = Builder()
-        else:
-            self.builder = builder
+        self.builder = Builder() if builder is None else builder
         self.builder.manager = self
         self.reset()
         if transaction_cls is not None:
@@ -98,10 +95,7 @@ class VersioningManager(object):
             'strategy': 'validity',
             'use_module_name': False
         }
-        if plugins is None:
-            self.plugins = []
-        else:
-            self.plugins = plugins
+        self.plugins = [] if plugins is None else plugins
         self.options.update(options)
 
     @property
@@ -320,10 +314,9 @@ class VersioningManager(object):
 
         if conn in self.units_of_work:
             return self.units_of_work[conn]
-        else:
-            uow = self.uow_class(self)
-            self.units_of_work[conn] = uow
-            return uow
+        uow = self.uow_class(self)
+        self.units_of_work[conn] = uow
+        return uow
 
     def before_flush(self, session, flush_context, instances):
         """
@@ -373,7 +366,7 @@ class VersioningManager(object):
             uow.reset(session)
             del self.units_of_work[conn]
 
-        for connection in dict(self.units_of_work).keys():
+        for connection in dict(self.units_of_work):
             if connection.closed or conn.connection is connection.connection:
                 uow = self.units_of_work[connection]
                 uow.reset(session)
@@ -391,7 +384,7 @@ class VersioningManager(object):
                 del self.session_connection_map[session]
 
 
-        for connection in dict(self.units_of_work).keys():
+        for connection in dict(self.units_of_work):
             if connection.closed or conn.connection is connection.connection:
                 uow = self.units_of_work[connection]
                 uow.reset()
@@ -453,7 +446,7 @@ class VersioningManager(object):
         if op is not None:
             table_name = statement.split(' ')[2]
             table_names = [
-                table.name if not table.schema else table.schema + '.' + table.name
+                f'{table.schema}.{table.name}' if table.schema else table.name
                 for table in self.association_tables
             ]
             if table_name in table_names:
@@ -491,22 +484,22 @@ class VersioningManager(object):
         :param statement: SQL statement string
         :param params: tuple or dict of statement parameters
         """
-        if isinstance(params, tuple):
-            parameters = {}
-            if op == Operation.DELETE:
-                regexp = '^DELETE FROM (.+?) WHERE'
-                match = re.match(regexp, statement)
-                tablename = match.groups()[0].strip('"').strip("'").strip('`')
-                table = self.metadata.tables[tablename]
-                columns = table.primary_key.columns.values()
-                for index, column in enumerate(columns):
-                    parameters[column.name] = params[index]
-            else:
-                columns = [
-                    column.strip() for column in
-                    statement.split('(')[1].split(')')[0].split(',')
-                ]
-                for index, column in enumerate(columns):
-                    parameters[column] = params[index]
-            return parameters
-        return params
+        if not isinstance(params, tuple):
+            return params
+        parameters = {}
+        if op == Operation.DELETE:
+            regexp = '^DELETE FROM (.+?) WHERE'
+            match = re.match(regexp, statement)
+            tablename = match.groups()[0].strip('"').strip("'").strip('`')
+            table = self.metadata.tables[tablename]
+            columns = table.primary_key.columns.values()
+            for index, column in enumerate(columns):
+                parameters[column.name] = params[index]
+        else:
+            columns = [
+                column.strip() for column in
+                statement.split('(')[1].split(')')[0].split(',')
+            ]
+            for index, column in enumerate(columns):
+                parameters[column] = params[index]
+        return parameters

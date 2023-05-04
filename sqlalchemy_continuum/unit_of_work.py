@@ -97,7 +97,7 @@ class UnitOfWork(object):
     def transaction_args(self, session):
         args = {}
         for plugin in self.manager.plugins:
-            args.update(plugin.transaction_args(self, session))
+            args |= plugin.transaction_args(self, session)
         return args
 
     def create_transaction(self, session):
@@ -134,22 +134,21 @@ class UnitOfWork(object):
         version_id = identity(target) + (self.current_transaction.id, )
         version_key = (version_cls, version_id)
 
-        if version_key not in self.version_objs:
-            version_obj = version_cls()
-            self.version_objs[version_key] = version_obj
-            self.version_session.add(version_obj)
-            tx_column = self.manager.option(
-                target,
-                'transaction_column_name'
-            )
-            setattr(
-                version_obj,
-                tx_column,
-                self.current_transaction.id
-            )
-            return version_obj
-        else:
+        if version_key in self.version_objs:
             return self.version_objs[version_key]
+        version_obj = version_cls()
+        self.version_objs[version_key] = version_obj
+        self.version_session.add(version_obj)
+        tx_column = self.manager.option(
+            target,
+            'transaction_column_name'
+        )
+        setattr(
+            version_obj,
+            tx_column,
+            self.current_transaction.id
+        )
+        return version_obj
 
     def process_operation(self, operation):
         """

@@ -89,25 +89,26 @@ class Builder(object):
         Build declarative version models based on classes that were collected
         during class instrumentation process.
         """
-        if self.manager.pending_classes:
-            for cls in self.manager.pending_classes:
-                if not self.manager.option(cls, 'versioning'):
-                    continue
+        if not self.manager.pending_classes:
+            return
+        for cls in self.manager.pending_classes:
+            if not self.manager.option(cls, 'versioning'):
+                continue
 
-                table = self.closest_matching_table(cls)
-                if table is not None:
-                    builder = ModelBuilder(self.manager, cls)
-                    version_cls = builder(
-                        table,
-                        self.manager.transaction_cls
-                    )
+            table = self.closest_matching_table(cls)
+            if table is not None:
+                builder = ModelBuilder(self.manager, cls)
+                version_cls = builder(
+                    table,
+                    self.manager.transaction_cls
+                )
 
-                    self.manager.plugins.after_version_class_built(
-                        cls,
-                        version_cls
-                    )
+                self.manager.plugins.after_version_class_built(
+                    cls,
+                    version_cls
+                )
 
-            self.manager.plugins.after_build_models(self.manager)
+        self.manager.plugins.after_build_models(self.manager)
 
     def build_relationships(self, version_classes):
         """
@@ -135,11 +136,12 @@ class Builder(object):
         if not self.manager.options['versioning']:
             return
 
-        if hasattr(cls, '__versioned__'):
-            if (not cls.__versioned__.get('class')
-                    and cls not in self.manager.pending_classes):
-                self.manager.pending_classes.append(cls)
-                self.manager.metadata = cls.metadata
+        if hasattr(cls, '__versioned__') and (
+            not cls.__versioned__.get('class')
+            and cls not in self.manager.pending_classes
+        ):
+            self.manager.pending_classes.append(cls)
+            self.manager.metadata = cls.metadata
 
         if hasattr(cls, '__version_parent__'):
             parent = cls.__version_parent__

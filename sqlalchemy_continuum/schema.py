@@ -169,12 +169,13 @@ def update_property_mod_flags(
 
     primary_keys = [c.name for c in table.c if c.primary_key]
     for row in stmt:
-        values = dict([
-            (column + mod_suffix, row[column + mod_suffix])
-            for column in tracked_columns
-            if row[column + mod_suffix]
-        ])
-        if values:
+        if values := dict(
+            [
+                (column + mod_suffix, row[column + mod_suffix])
+                for column in tracked_columns
+                if row[column + mod_suffix]
+            ]
+        ):
             criteria = [
                 getattr(table.c, pk) == row[pk] for pk in primary_keys
             ]

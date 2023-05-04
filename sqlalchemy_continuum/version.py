@@ -55,10 +55,7 @@ class VersionClassBase(object):
         for key in sa.inspect(self.__class__).columns.keys():
             if is_internal_column(self, key):
                 continue
-            if not previous_version:
-                old = None
-            else:
-                old = getattr(previous_version, key)
+            old = getattr(previous_version, key) if previous_version else None
             new = getattr(self, key)
             if old != new:
                 data[key] = [old, new]

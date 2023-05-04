@@ -78,7 +78,7 @@ class RevertTestCase(TestCase):
         article.tags = []
         self.session.commit()
         self.session.refresh(article)
-        assert article.tags == []
+        assert not article.tags
         assert len(article.versions[0].tags) == 1
         assert article.versions[0].tags[0].article
         article.versions[0].revert(relations=['tags'])

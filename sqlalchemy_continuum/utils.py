@@ -134,17 +134,11 @@ def version_table(table):
     :param table: SQLAlchemy Table object
     """
     if table.schema:
-        return table.metadata.tables[
-            table.schema + '.' + table.name + '_version'
-        ]
+        return table.metadata.tables[f'{table.schema}.{table.name}_version']
     elif table.metadata.schema:
-        return table.metadata.tables[
-            table.metadata.schema + '.' + table.name + '_version'
-        ]
+        return table.metadata.tables[f'{table.metadata.schema}.{table.name}_version']
     else:
-        return table.metadata.tables[
-            table.name + '_version'
-        ]
+        return table.metadata.tables[f'{table.name}_version']
 
 
 def versioned_objects(session):
@@ -341,9 +335,8 @@ def is_modified(obj):
                 continue
             if attr.history.has_changes():
                 return True
-        if key in versioned_relationship_keys:
-            if attr.history.has_changes():
-                return True
+        if key in versioned_relationship_keys and attr.history.has_changes():
+            return True
     return False
 
 
@@ -392,10 +385,7 @@ def count_versions(obj):
         '%s = %r' % (pk, getattr(obj, pk))
         for pk in get_primary_keys(obj)
     ]
-    query = 'SELECT COUNT(1) FROM %s WHERE %s' % (
-        table_name,
-        ' AND '.join(criteria)
-    )
+    query = f"SELECT COUNT(1) FROM {table_name} WHERE {' AND '.join(criteria)}"
     return session.execute(query).scalar()
 
 
